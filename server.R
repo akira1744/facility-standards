@@ -306,7 +306,7 @@ server <- function(input, output, session) {
         select(-受理届出コード)
     }
   })
-  # 
+  
   # # 結合
   rt_compare_todokede <- reactive({
     
@@ -325,6 +325,8 @@ server <- function(input, output, session) {
   output$tb_compare_todokede <- renderDT(
     mydatatable(rt_compare_todokede(),row=25,pctcol='算定率')
   )
+  
+  ##############################################################################
   
   # 絞り込み条件をまとめたdfを作成する
   rt_sidebar<- reactive({
@@ -349,11 +351,8 @@ server <- function(input, output, session) {
       )
     )
   })
-
-  
   ##############################################################################
-  
-  # ダウンロード機能
+  # 施設基準比較データのダウンロード
   output$download_compare_todokede <- downloadHandler(
     filename = '施設基準比較.xlsx'
     ,content = function(file){
@@ -370,8 +369,4 @@ server <- function(input, output, session) {
         writexl::write_xlsx(file)
     }
   )
-  
-  
-  ##############################################################################
 }
-

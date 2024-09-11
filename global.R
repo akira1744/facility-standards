@@ -7,10 +7,9 @@ con <- DBI::dbConnect(duckdb::duckdb(),'sisetukijun.duckdb',read_only=TRUE)
 ################################################################################
 
 # table一覧
-DBI::dbListTables(con)
+# DBI::dbListTables(con)
 
 ################################################################################
-
 
 # 厚生局のdf
 mst_kouseikyoku <- tbl(con,'mst_kouseikyoku') %>% 
@@ -83,4 +82,4 @@ mst_latest_todokede <- mst_latest_todokede %>%
   inner_join(df_mst_todokede,by='受理届出コード') %>% 
   select(医療機関コード,受理届出名称,算定開始年月日=西暦算定開始年月日)
 
-mst_latest_todokede
+# mst_latest_todokede
