@@ -35,6 +35,7 @@ str_kouseikyoku_update_date <- mst_kouseikyoku_update_date %>%
 # 都道府県のdf
 df_mst_pref <- tbl(con,'mst_pref') %>% 
   inner_join(tbl(con,'mst_kouseikyoku'),by='厚生局コード') %>% 
+  arrange(厚生局コード,都道府県コード) %>% 
   select(厚生局コード,厚生局,都道府県コード,都道府県名) %>% 
   collect()
 
