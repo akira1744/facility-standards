@@ -53,6 +53,13 @@ df_mst_todokede <- tbl(con,'mst_todokede') %>%
 
 # df_mst_todokede
 
+sidelist_todokede <- df_mst_todokede %>% 
+  filter(受理届出名称!='なし') %>% 
+  pull(受理届出名称) %>% 
+  c('',.)
+
+# sidelist_todokede
+
 # 施設のdf
 mst_latest_sisetu <- tbl(con,'latest_sisetu_main') %>% 
   inner_join(tbl(con,'latest_sisetu_sub'),by=c('update_date','医療機関コード')) %>% 
@@ -61,6 +68,11 @@ mst_latest_sisetu <- tbl(con,'latest_sisetu_main') %>%
   left_join(df_mst_pref,by='都道府県コード') %>% 
   arrange(厚生局コード,都道府県コード,施設名) %>% 
   select(医療機関コード,施設名,医療機関名称,都道府県名,住所,電話番号,病床数) 
+
+# sidebarの施設名一覧
+sidelist_sisetu <- mst_latest_sisetu %>% 
+  pull(施設名) %>% 
+  c('',.)
 
 # 処理用
 df_latest_sisetu <- mst_latest_sisetu %>% 
