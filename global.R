@@ -93,6 +93,7 @@ df_latest_todokede <- mst_latest_todokede %>%
 # 元データ提供用の届出一覧
 mst_latest_todokede <- mst_latest_todokede %>% 
   inner_join(df_mst_todokede,by='受理届出コード') %>% 
-  select(医療機関コード,受理届出名称,算定開始年月日=西暦算定開始年月日)
+  inner_join(select(mst_latest_sisetu,医療機関コード,医療機関名称),by='医療機関コード') %>% 
+  select(医療機関コード,医療機関名称,受理届出名称,算定開始年月日=西暦算定開始年月日)
 
 # mst_latest_todokede
