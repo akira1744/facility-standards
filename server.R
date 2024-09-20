@@ -140,7 +140,7 @@ server <- function(input, output, session) {
       rt_target_sisetu1()
     } else {
       rt_target_sisetu1() %>%
-        filter(str_detect(施設名, input$target_sisetu))
+        filter(施設名== input$target_sisetu)
     }
   })
 
