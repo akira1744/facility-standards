@@ -86,103 +86,21 @@ ui <-
             label='比較対象施設名',
             choices=NULL,
           ),
+          # hr(style = "border: 1px solid gray;"),
           ######################################################################
-          # DefaultのselectizeInputで全角入力をすると、入力の挙動がおかしくなるときがあった。
-          # selectizeInputが選択された時に内容を削除するようにしたところ、入力の挙動がおかしくなることがなくなった。
-          tags$head(
-            tags$script(HTML("
-              $(document).on('shiny:connected', function(event) {
-                // マウスクリックによるフォーカスを検出するフラグ
-                var clicked = false;
-        
-                $('#target_todokede1').next('.selectize-control').mousedown(function() {
-                  clicked = true;
-                });
-        
-                $('#target_todokede1').selectize()[0].selectize.on('focus', function() {
-                  if (clicked) {
-                    this.clear();
-                    clicked = false; // フラグをリセット
-                  }
-                });
-                // キーボード操作によるフォーカスではフラグをリセット
-                $('#target_todokede1').next('.selectize-control').keydown(function() {
-                  clicked = false;
-                });
-              });
-            "))
+          h4('比較対象を施設基準で絞込'),
+          textInput(
+            inputId='target_todokede',
+            label='施設基準',
           ),
-          ######################################################################
-          selectizeInput(
-            inputId='target_todokede1',
-            label='施設基準で絞込(1)',
-            choices=NULL,
-          ),
-          ######################################################################
-          # DefaultのselectizeInputで全角入力をすると、入力の挙動がおかしくなるときがあった。
-          # selectizeInputが選択された時に内容を削除するようにしたところ、入力の挙動がおかしくなることがなくなった。
-          tags$head(
-            tags$script(HTML("
-              $(document).on('shiny:connected', function(event) {
-                // マウスクリックによるフォーカスを検出するフラグ
-                var clicked = false;
-        
-                $('#target_todokede2').next('.selectize-control').mousedown(function() {
-                  clicked = true;
-                });
-        
-                $('#target_todokede2').selectize()[0].selectize.on('focus', function() {
-                  if (clicked) {
-                    this.clear();
-                    clicked = false; // フラグをリセット
-                  }
-                });
-                // キーボード操作によるフォーカスではフラグをリセット
-                $('#target_todokede2').next('.selectize-control').keydown(function() {
-                  clicked = false;
-                });
-              });
-            "))
-          ),
-          ######################################################################
-          selectizeInput(
-            inputId='target_todokede2',
-            label='施設基準で絞込(2)',
-            choices=NULL,
-          ),
-          ######################################################################
-          # DefaultのselectizeInputで全角入力をすると、入力の挙動がおかしくなるときがあった。
-          # selectizeInputが選択された時に内容を削除するようにしたところ、入力の挙動がおかしくなることがなくなった。
-          tags$head(
-            tags$script(HTML("
-              $(document).on('shiny:connected', function(event) {
-                // マウスクリックによるフォーカスを検出するフラグ
-                var clicked = false;
-        
-                $('#target_todokede3').next('.selectize-control').mousedown(function() {
-                  clicked = true;
-                });
-        
-                $('#target_todokede3').selectize()[0].selectize.on('focus', function() {
-                  if (clicked) {
-                    this.clear();
-                    clicked = false; // フラグをリセット
-                  }
-                });
-                // キーボード操作によるフォーカスではフラグをリセット
-                $('#target_todokede3').next('.selectize-control').keydown(function() {
-                  clicked = false;
-                });
-              });
-            "))
-          ),
-          ######################################################################
-          selectizeInput(
-            inputId='target_todokede3',
-            label='施設基準で絞込(3)',
-            choices=NULL,
-          ),
+          selectInput(
+            inputId='todokede_kensaku',
+            label='施設基準絞込の検索条件',
+            choices=c('前方一致','部分一致','完全一致'),
+            selected = '前方一致',
+          )
         ),
+        ########################################################################
         mainPanel(
           width=9,
           tabsetPanel(
@@ -199,8 +117,7 @@ ui <-
               p('2.比較対象設定'),
               p('・厚生局・都道府県・施設名・施設基準で比較対象を絞り込んでください。'),
               p('・比較対象設定のタブで、選択された施設を確認できます。'),
-              p('・例えば、施設基準で絞込(1)で特定集中治療室管理料１を選択すれば、比較対象を特定集中治療室管理料１を届出ている施設に絞り込めます。'),
-              p('・施設基準で絞込を複数選択した場合、and条件で比較対象施設を絞り込みます。'),
+              p('・算定している施設基準で、比較対象を絞り込むことも可能です。'),
               p('3.施設基準比較'),
               p('・施設基準比較のタブで、自院と比較対象施設の施設基準の届出状況を比較することができます。'),
               h3('データソース'),
@@ -246,6 +163,8 @@ ui <-
               h3('比較施設'),
               uiOutput('target_sisetu_message'),
               DTOutput('tb_target_sisetu'),
+              h3('比較対象を施設基準で絞込'),
+              DTOutput('tb_target_todokede_agg')
             ),
             tabPanel(
               title='施設基準比較',

@@ -44,7 +44,7 @@ server <- function(input, output, session) {
       tibble("医療機関コード" = "-", "施設名" = "", "都道府県名" = "", "住所" = "")
     } else {
       df_latest_sisetu %>%
-        filter(str_detect(施設名, input$my_sisetu)) %>%
+        filter(施設名==input$my_sisetu) %>%
         select(医療機関コード, 施設名, 都道府県名, 住所)
     }
   })
@@ -144,206 +144,88 @@ server <- function(input, output, session) {
     }
   })
 
-  ################################################################################
-
-  # # 施設基準で絞込(1)
-  # rt_target_todokede1 <- reactive({
-  #   regex_todokede1 <- make_beginning_match_regex(input$target_todokede1)
-  #   df_mst_todokede %>%
-  #     filter(str_detect(受理届出名称,regex_todokede1)) %>%
-  #     select(受理届出コード,受理届出名称)
-  # })
-  #
-  # # 絞り込み用の受理届出名称のtableを作成
-  # output$tb_target_todokede1 <- renderDT(
-  #   if(nrow(rt_target_todokede1()>0)){
-  #     rt_target_todokede1() %>%
-  #       select(受理届出名称) %>%
-  #       mydatatable(row=5)
-  #   }else{
-  #     tibble('受理届出名称'='-') %>%
-  #     mydatatable(row=5)
-  #   }
-  # )
-  #
-  # # rt_target_todokede1で施設を絞り込み
-  # rt_target_sisetu3 <- reactive({
-  #
-  #   # rt_target_todokede1の医療機関コードを取得し追加
-  #   if(nrow(rt_target_todokede1()>0)){
-  #
-  #     target_todokede_codes1 <- rt_target_todokede1() %>%
-  #       pull(受理届出コード)
-  #
-  #     target_todokede_sisetu_codes1 <- df_latest_todokede %>%
-  #       filter(受理届出コード %in% target_todokede_codes1) %>%
-  #       distinct(医療機関コード) %>%
-  #       pull(医療機関コード)
-  #
-  #     rt_target_sisetu2() %>%
-  #       filter(医療機関コード %in% target_todokede_sisetu_codes1)
-  #
-  #   }else{
-  #     rt_target_sisetu2()
-  #   }
-  # })
-
   ##############################################################################
-
-  # 施設基準で絞込(1)
-  rt_target_sisetu3 <- reactive({
-    if (input$target_todokede1 == "") {
-      rt_target_sisetu2()
+  
+  # 施設基準で比較対象を絞込
+  
+  ##############################################################################
+  
+  # 施設基準で絞込の受理届出コードを取得
+  rt_target_todokede_codes <- reactive({
+    if (input$target_todokede == "") {
+      c()
     } else {
-      target_todokede_code1 <- df_mst_todokede %>%
-        filter(受理届出名称 == input$target_todokede1) %>%
-        pull(受理届出コード)
-
-      target_todokede_sisetu_codes1 <- df_latest_todokede %>%
-        filter(受理届出コード %in% target_todokede_code1) %>%
-        pull(医療機関コード)
-
-      rt_target_sisetu2() %>%
-        filter(医療機関コード %in% target_todokede_sisetu_codes1)
+      
+      if(input$todokede_kensaku=='前方一致'){
+        target_todokede_codes <- df_mst_todokede %>%
+          filter(str_detect(受理届出名称,str_glue('^{input$target_todokede}'))) %>% 
+          pull(受理届出コード)
+        
+      }else if(input$todokede_kensaku=='完全一致'){
+        target_todokede_codes <- df_mst_todokede %>%
+          filter(受理届出名称==input$target_todokede) %>% 
+          pull(受理届出コード)
+        
+      }else{
+        target_todokede_codes <- df_mst_todokede %>%
+          filter(str_detect(受理届出名称,input$target_todokede)) %>% 
+          pull(受理届出コード)
+        
+      }
+      
+      if(length(target_todokede_codes)==0){
+        c()
+      }else{
+        target_todokede_codes
+      }
     }
   })
-
-  # 施設基準で絞込(2)
-  rt_target_sisetu4 <- reactive({
-    if (input$target_todokede2 == "") {
-      rt_target_sisetu3()
-    } else {
-      target_todokede_code2 <- df_mst_todokede %>%
-        filter(受理届出名称 == input$target_todokede2) %>%
-        pull(受理届出コード)
-
-      target_todokede_sisetu_codes2 <- df_latest_todokede %>%
-        filter(受理届出コード %in% target_todokede_code2) %>%
-        pull(医療機関コード)
-
-      rt_target_sisetu3() %>%
-        filter(医療機関コード %in% target_todokede_sisetu_codes2)
+  
+  # 施設基準で絞り込みの算定施設数集計dfを作成
+  rt_target_todokede_agg <- reactive({
+    if(input$target_todokede == ""){
+      tibble(受理届出名称='絞込用の施設基準が入力されていません。')
+    }else if (length(rt_target_todokede_codes())==0){
+      tibble(受理届出名称='該当する施設基準がありません。')
+    }else{
+      df_latest_todokede %>% 
+        filter(受理届出コード %in% rt_target_todokede_codes()) %>% 
+        group_by(受理届出コード) %>% 
+        summarise(算定施設数 = n()) %>% 
+        left_join(df_mst_todokede,by='受理届出コード') %>% 
+        select(受理届出名称,算定施設数) %>% 
+        arrange(desc(算定施設数))
     }
   })
-
-
-  # 施設基準で絞込(3)
-  rt_target_sisetu5 <- reactive({
-    if (input$target_todokede3 == "") {
-      rt_target_sisetu4()
-    } else {
-      target_todokede_code3 <- df_mst_todokede %>%
-        filter(受理届出名称 == input$target_todokede3) %>%
-        pull(受理届出コード)
-
-      target_todokede_sisetu_codes3 <- df_latest_todokede %>%
-        filter(受理届出コード %in% target_todokede_code3) %>%
-        pull(医療機関コード)
-
-      rt_target_sisetu4() %>%
-        filter(医療機関コード %in% target_todokede_sisetu_codes3)
-    }
-  })
-
-
-  ##############################################################################
-
-  # # 施設基準で絞込(2)
-  # rt_target_todokede2 <- reactive({
-  #   regex_todokede2 <- make_beginning_match_regex(input$target_todokede2)
-  #   df_mst_todokede %>%
-  #     filter(str_detect(受理届出名称,regex_todokede2)) %>%
-  #     select(受理届出コード,受理届出名称)
-  # })
-  #
-  # # 絞り込み用の受理届出名称のtableを作成
-  # output$tb_target_todokede2 <- renderDT(
-  #   if(nrow(rt_target_todokede2()>0)){
-  #     rt_target_todokede2() %>%
-  #       select(受理届出名称) %>%
-  #       mydatatable(row=5)
-  #   }else{
-  #     tibble('受理届出名称'='-') %>%
-  #       mydatatable(row=5)
-  #   }
-  # )
-  #
-  # # rt_target_todokede2で施設を絞り込み
-  # rt_target_sisetu4 <- reactive({
-  #
-  #   # rt_target_todokede1の医療機関コードを取得し追加
-  #   if(nrow(rt_target_todokede2()>0)){
-  #
-  #     target_todokede_codes2 <- rt_target_todokede2() %>%
-  #       pull(受理届出コード)
-  #
-  #     target_todokede_sisetu_codes2 <- df_latest_todokede %>%
-  #       filter(受理届出コード %in% target_todokede_codes2) %>%
-  #       distinct(医療機関コード) %>%
-  #       pull(医療機関コード)
-  #
-  #     rt_target_sisetu3() %>%
-  #       filter(医療機関コード %in% target_todokede_sisetu_codes2)
-  #
-  #   }else{
-  #     rt_target_sisetu3()
-  #   }
-  # })
-
-  ##############################################################################
-
-  # # 施設基準で絞込(3)
-  # rt_target_todokede3 <- reactive({
-  #   regex_todokede3 <- make_beginning_match_regex(input$target_todokede3)
-  #   df_mst_todokede %>%
-  #     filter(str_detect(受理届出名称,regex_todokede3)) %>%
-  #     select(受理届出コード,受理届出名称)
-  # })
-  #
-  # # 絞り込み用の受理届出名称のtableを作成
-  # output$tb_target_todokede3 <- renderDT(
-  #   if(nrow(rt_target_todokede3()>0)){
-  #     rt_target_todokede3() %>%
-  #       select(受理届出名称) %>%
-  #       mydatatable(row=5)
-  #   }else{
-  #     tibble('受理届出名称'='-') %>%
-  #       mydatatable(row=5)
-  #   }
-  # )
-  #
-  # # rt_target_todokede3で施設を絞り込み
-  # rt_target_sisetu5 <- reactive({
-  #
-  #   # rt_target_todokede1の医療機関コードを取得し追加
-  #   if(nrow(rt_target_todokede3()>0)){
-  #
-  #     target_todokede_codes3 <- rt_target_todokede3() %>%
-  #       pull(受理届出コード)
-  #
-  #     target_todokede_sisetu_codes3 <- df_latest_todokede %>%
-  #       filter(受理届出コード %in% target_todokede_codes3) %>%
-  #       distinct(医療機関コード) %>%
-  #       pull(医療機関コード)
-  #
-  #     rt_target_sisetu4() %>%
-  #       filter(医療機関コード %in% target_todokede_sisetu_codes3)
-  #
-  #   }else{
-  #     rt_target_sisetu4()
-  #   }
-  # })
-
-  ##############################################################################
 
   # 比較対象のtb作成
-  output$tb_target_sisetu <- renderDT(
-    mydatatable(rt_target_sisetu5(), row = 10)
+  output$tb_target_todokede_agg <- renderDT(
+    mydatatable(rt_target_todokede_agg(), row = 25)
   )
+  
+  ##############################################################################
+  # 施設基準で絞込(1)
+  rt_target_sisetu3 <- reactive({
+    if (length(rt_target_todokede_codes()) == 0){
+      rt_target_sisetu2()
+    } else {
+      target_todokede_sisetu_codes <- df_latest_todokede %>%
+        filter(受理届出コード %in% rt_target_todokede_codes()) %>%
+        pull(医療機関コード)
+      rt_target_sisetu2() %>%
+        filter(医療機関コード %in% target_todokede_sisetu_codes)
+    }
+  })
+  
+  output$tb_target_sisetu <- renderDT(
+    mydatatable(rt_target_sisetu3(), row = 5)
+  )
+  
+  ##############################################################################
 
   # 比較対象が0施設の場合のメッセージ
   target_sisetu_message <- reactive({
-    target_sisetu_count <- nrow(rt_target_sisetu5())
+    target_sisetu_count <- nrow(rt_target_sisetu3())
     if (target_sisetu_count == 0) {
       HTML('<span style="color: red;">比較対象が0施設です</span>')
     } else {
@@ -362,13 +244,13 @@ server <- function(input, output, session) {
   ##############################################################################
 
   # 比較対象の施設基準を抽出
-  rt_target_todokede_agg <- reactive({
-    target_sisetu_count <- nrow(rt_target_sisetu5())
+  rt_target_todokede_all <- reactive({
+    target_sisetu_count <- nrow(rt_target_sisetu3())
     if (target_sisetu_count == 0) {
       tibble("受理届出コード" = 0)
     } else {
       df_latest_todokede %>%
-        filter(医療機関コード %in% rt_target_sisetu5()$医療機関コード) %>%
+        filter(医療機関コード %in% rt_target_sisetu3()$医療機関コード) %>%
         select(医療機関コード, 受理届出コード) %>%
         group_by(受理届出コード) %>%
         summarise(
@@ -376,15 +258,23 @@ server <- function(input, output, session) {
           算定施設数 = n()
         ) %>%
         inner_join(df_mst_todokede, by = "受理届出コード") %>%
-        select(-受理届出コード)
+        select(受理届出名称,算定率,算定施設数) %>% 
+        arrange(desc(算定施設数))
     }
   })
+  
+  # 比較対象のtb作成
+  output$tb_target_todokede_all <- renderDT(
+    mydatatable(rt_target_todokede_all(), row = 25, pctcol = "算定率")
+  )
+  
+  ##############################################################################
 
-  # # 結合
+  # 自院と比較対象施設の集計表を結合
   rt_compare_todokede <- reactive({
     rt_my_todokede() %>%
       mutate(自院算定 = "〇") %>%
-      full_join(rt_target_todokede_agg(), by = "受理届出名称") %>%
+      full_join(rt_target_todokede_all(), by = "受理届出名称") %>%
       replace_na(list(
         自院算定 = "×", 算定施設数 = 0, 算定率 = 0
       )) %>%
@@ -392,8 +282,8 @@ server <- function(input, output, session) {
       arrange(desc(算定率), 受理届出名称) %>%
       filter(受理届出名称 != "なし")
   })
-  #
-  # # 比較対象のtb作成
+  
+  # 比較対象のtb作成
   output$tb_compare_todokede <- renderDT(
     mydatatable(rt_compare_todokede(), row = 25, pctcol = "算定率")
   )
@@ -432,7 +322,7 @@ server <- function(input, output, session) {
         "施設基準比較" = rt_compare_todokede(),
         "絞込条件" = rt_sidebar(),
         "自院" = rt_my_sisetu(),
-        "比較対象" = rt_target_sisetu5(),
+        "比較対象" = rt_target_sisetu3(),
         "施設基準で絞り込み(1)" = rt_target_todokede1(),
         "施設基準で絞り込み(2)" = rt_target_todokede2(),
         "施設基準で絞り込み(3)" = rt_target_todokede3(),
