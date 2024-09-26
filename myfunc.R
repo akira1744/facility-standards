@@ -12,7 +12,11 @@ mydatatable <- function(df,pctcol,hidecol,select_hpname,row=15){
       ,options=list(
         # dom='Bfrtip' # Buttonsのボタンの設置?
         # ,buttons=c('print') # Buttonsのボタンの種類を指定
-        pageLength=row # 表示行数をセット
+        lengthMenu = list(
+          c(5, 10, 15, 20, 25, 30, 40, 50),
+          c('5', '10', '15', '20', '25', '30', '40', '50')
+        )  # 行数の選択肢
+        ,pageLength=row # 表示行数をセット
         ,keys=TRUE # KerTableに必要なoption
       )
     )  
@@ -27,7 +31,11 @@ mydatatable <- function(df,pctcol,hidecol,select_hpname,row=15){
       ,options=list(
         # dom='Bfrtip' # Buttonsのボタンの設置?
         # ,buttons=c('print') # Buttonsのボタンの種類を指定
-        pageLength=row # 表示行数をセット
+        lengthMenu = list(
+          c(5, 10, 15, 20, 25, 30, 40, 50),
+          c('5', '10', '15', '20', '25', '30', '40', '50')
+        )  # 行数の選択肢
+        ,pageLength=row # 表示行数をセット
         ,keys=TRUE # KerTableに必要なoption
         ,columnDefs = list(list(targets=hidecol, visible=FALSE)) #列を非表示にする 
       )
