@@ -178,5 +178,46 @@ ui <-
           )
         )
       )
+    ),
+    tabPanel(
+      title='過去データ',
+      sidebarLayout(
+        sidebarPanel(
+          width=3,
+          h3('ダウンロード対象'),
+          selectInput(
+            inputId='target_update_date',
+            label='時点',
+            choices=update_dates,
+          ),
+        ),
+        mainPanel(
+          width=9,
+          DTOutput('tb_update_date_wide')
+        ),
+        # TODO 2024-07-01のデータをDBから削除した方がわかりやすくなりそう。
+        # TODO ダウンロードデータの作成をserverに
+        # TODO ダウンロードボタンの設定をuiに
+      ),
     )
+    # ##########################################################################
+    # tabPanelのフォーマット
+    # tabPanel(
+    #   title='',
+    #   sidebarLayout(
+    #     sidebarPanel(
+    #       width=3,
+    #     ),
+    #     mainPanel(
+    #       width=9,
+    #       tabsetPanel(
+    #         type='tabs',
+    #         tabPanel(
+    #           title='',
+    #         ),
+    #       ),
+    #     ),
+    #   ),
+    # )
+    # ##########################################################################
   )

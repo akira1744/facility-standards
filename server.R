@@ -331,4 +331,8 @@ server <- function(input, output, session) {
         writexl::write_xlsx(file)
     }
   )
+  ##############################################################################
+  output$tb_update_date_wide <- renderDT(
+    DT::datatable(update_date_wide)
+  )
 }

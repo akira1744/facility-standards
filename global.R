@@ -96,4 +96,31 @@ mst_latest_todokede <- mst_latest_todokede %>%
   inner_join(select(mst_latest_sisetu,医療機関コード,医療機関名称),by='医療機関コード') %>% 
   select(医療機関コード,医療機関名称,受理届出名称,算定開始年月日=西暦算定開始年月日)
 
-# mst_latest_todokede
+################################################################################
+
+# 過去データ用
+
+################################################################################
+
+# 過去データダウンロードで使用するupdate_dateのリスト
+update_dates <- tbl(con,'mst_update_date') %>% 
+  distinct(update_date) %>% 
+  collect() %>% 
+  arrange(update_date) %>% 
+  pull(update_date)
+
+# 厚生局ごとにいつのデータが入っているのかを示すdf
+update_date_wide <- tbl(con,'mst_update_date') %>% 
+  left_join(tbl(con,'mst_kouseikyoku'),by='厚生局') %>% 
+  collect() %>% 
+  mutate(value='〇') %>% 
+  arrange(厚生局コード) %>% 
+  pivot_wider(
+    id_cols=update_date
+    ,names_from='厚生局'
+    ,values_from = value
+    ,values_fill='×'
+  ) %>% 
+  arrange(update_date) %>% 
+  rename(時点=update_date)
+
