@@ -109,8 +109,10 @@ ui <-
               title='マニュアル',
               h3('概要'),
               p('本アプリは施設基準を分析するためのアプリです。'),
-              p('自院と比較対象の医療機関を設定し、施設基準の届出有無を比較することができます。'),
-              h3('使用方法'),
+              p('「施設基準比較」では、自院と比較対象の施設基準を比較することができます。'),
+              p('「施設基準比較」は各厚生局の最新のデータを使用しています。'),
+              p('「データダウンロード」では、2024/8/1以降の全厚生局の施設基準届出データをダウンロードすることができます。'),
+              h3('施設基準比較の使用方法'),
               p('1.自院設定'),
               p('・自院施設名を選択してください。'),
               p('・自院設定のタブで、選択された施設とその施設基準を確認できます。'),
@@ -137,11 +139,6 @@ ui <-
               br(),
               a("・九州厚生局", href = "https://kouseikyoku.mhlw.go.jp/kyushu/gyomu/gyomu/hoken_kikan/index_00007.html", target = "_blank"),
               br(),
-              h3('本アプリが使用しているデータ'),
-              p('本アプリでは各厚生局の最新のデータを使用しています。(更新頻度は週に1回程度)'),
-              uiOutput('kouseikyoku_update_date'),
-              h3('全件データダウンロード'),
-              downloadButton('download_original_data',label='Download'),
               h3('問い合わせ先'),
               HTML("
                 <ul>
@@ -168,19 +165,43 @@ ui <-
             ),
             tabPanel(
               title='施設基準比較',
-              uiOutput('my_sisetu_message2'),
-              uiOutput('target_sisetu_message2'),
-              DTOutput('tb_compare_todokede'),
-              br(),
-              downloadButton('download_compare_todokede',label='Download'),
-              br()
+              ##################################################################
+              # 2段構成に変更し,1段名は2列に変更
+              ##################################################################
+              # before
+              # uiOutput('my_sisetu_message2'),
+              # uiOutput('target_sisetu_message2'),
+              # downloadButton('download_compare_todokede',label='Download'),
+              # DTOutput('tb_compare_todokede')
+              ##################################################################
+              # 上段 2列構成
+              fluidRow(
+                column(
+                  width = 10, align = 'left',
+                  uiOutput('my_sisetu_message2'),
+                  uiOutput('target_sisetu_message2')
+                ),
+                column(
+                  width = 2, align = 'right',
+                  downloadButton('download_compare_todokede', label = 'Download')
+                )
+              ),
+              
+              # 下段 1列構成
+              fluidRow(
+                column(
+                  width = 12,
+                  DTOutput('tb_compare_todokede')
+                )
+              )
+              ##################################################################
             )
           )
         )
       )
     ),
     tabPanel(
-      title='過去データ',
+      title='データダウンロード',
       sidebarLayout(
         sidebarPanel(
           width=3,
@@ -188,14 +209,15 @@ ui <-
           selectInput(
             inputId='target_update_date',
             label='時点',
-            choices=update_dates,
+            choices=choices_update_dates,
           ),
+          downloadButton('download_original_data',label='Download'),
         ),
         mainPanel(
           width=9,
+          h3('ダウンロード可能データ'),
           DTOutput('tb_update_date_wide')
         ),
-        # TODO 2024-07-01のデータをDBから削除した方がわかりやすくなりそう。
         # TODO ダウンロードデータの作成をserverに
         # TODO ダウンロードボタンの設定をuiに
       ),

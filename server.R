@@ -13,31 +13,6 @@ server <- function(input, output, session) {
   ##############################################################################
   # マニュアルページ
   ##############################################################################
-
-  # いつのデータを使用しているのかを示すためのUIを作成
-  output$kouseikyoku_update_date <- renderUI({
-    # Create a list of HTML text elements
-    tagList(
-      lapply(str_kouseikyoku_update_date$text, function(txt) {
-        tags$p(txt) # Wrap each text in a <p> tag
-      })
-    )
-  })
-
-  # 元データのダウンロード機能
-  output$download_original_data <- downloadHandler(
-    filename = "施設基準_全件データ.xlsx",
-    content = function(file) {
-      list(
-        "医療機関一覧" = mst_latest_sisetu,
-        "施設基準届出一覧" = mst_latest_todokede,
-        "使用データ" = mst_pref_update_date
-      ) %>%
-        writexl::write_xlsx(file)
-    }
-  )
-
-  ##############################################################################
   # 自院のdf作成
   rt_my_sisetu <- reactive({
     if (input$my_sisetu == "") {
@@ -52,7 +27,7 @@ server <- function(input, output, session) {
   # 自院が1施設に特定されていない場合に表示するメッセージを作成
   rt_my_sisetu_message <- reactive({
     if (input$my_sisetu == "") {
-      HTML('<span style="color: red;">自院を入力してください</span>')
+      HTML('<span style="color: red;">自院施設名を選択してください</span>')
     } else if (nrow(rt_my_sisetu()) != 1) {
       HTML('<span style="color: red;">自院を1施設に特定してください</span>')
     } else {
@@ -92,7 +67,7 @@ server <- function(input, output, session) {
 
   # 自院施設基準のtb作成
   output$tb_my_todokede <- renderDT(
-    mydatatable(rt_my_todokede(), row = 25)
+    mydatatable(rt_my_todokede(), row = 10)
   )
 
   ##############################################################################
@@ -200,7 +175,7 @@ server <- function(input, output, session) {
 
   # 比較対象のtb作成
   output$tb_target_todokede_agg <- renderDT(
-    mydatatable(rt_target_todokede_agg(), row = 25)
+    mydatatable(rt_target_todokede_agg(), row = 10)
   )
   
   ##############################################################################
@@ -263,11 +238,6 @@ server <- function(input, output, session) {
     }
   })
   
-  # 比較対象のtb作成
-  output$tb_target_todokede_all <- renderDT(
-    mydatatable(rt_target_todokede_all(), row = 25, pctcol = "算定率")
-  )
-  
   ##############################################################################
 
   # 自院と比較対象施設の集計表を結合
@@ -285,7 +255,7 @@ server <- function(input, output, session) {
   
   # 比較対象のtb作成
   output$tb_compare_todokede <- renderDT(
-    mydatatable(rt_compare_todokede(), row = 25, pctcol = "算定率")
+    mydatatable(rt_compare_todokede(), row = 15, pctcol = "算定率")
   )
 
   ##############################################################################
@@ -298,18 +268,16 @@ server <- function(input, output, session) {
         "比較対象の厚生局",
         "比較対象の都道府県",
         "比較対象の施設名",
-        "比較対象の施設基準で絞り込み(1)",
-        "比較対象の施設基準で絞り込み(2)",
-        "比較対象の施設基準で絞り込み(3)"
+        "比較対象を施設基準で絞り込み",
+        "施設基準絞込の検索条件"
       ),
       入力 = c(
         input$my_sisetu,
         input$target_kouseikyoku,
         input$target_pref,
         input$target_sisetu,
-        input$target_todokede1,
-        input$target_todokede2,
-        input$target_todokede3
+        input$target_todokede,
+        input$todokede_kensaku
       )
     )
   })
@@ -323,16 +291,109 @@ server <- function(input, output, session) {
         "絞込条件" = rt_sidebar(),
         "自院" = rt_my_sisetu(),
         "比較対象" = rt_target_sisetu3(),
-        "施設基準で絞り込み(1)" = rt_target_todokede1(),
-        "施設基準で絞り込み(2)" = rt_target_todokede2(),
-        "施設基準で絞り込み(3)" = rt_target_todokede3(),
         "使用データ" = mst_pref_update_date
       ) %>%
         writexl::write_xlsx(file)
     }
   )
   ##############################################################################
+  
+  # データダウンロードページの処理
+  
+  ##############################################################################
+  
+  # 厚生局ごとに、いつの時点のデータがDBに格納されているのかを表示するDTを作成
   output$tb_update_date_wide <- renderDT(
     DT::datatable(update_date_wide)
+  )
+  
+  ##############################################################################
+  
+  # データダウンロードでダウンロードする医療機関一覧を作成
+  rt_download_sisetu <- reactive({
+    if(input$target_update_date=='最新'){
+      tbl(con,'latest_sisetu_main') %>% 
+        inner_join(tbl(con,'latest_sisetu_sub'),by=c('update_date','医療機関コード')) %>% 
+        inner_join(tbl(con,'mst_pref'),by=c('厚生局コード','都道府県コード')) %>% 
+        select(医療機関コード,医療機関名称,都道府県名,住所,電話番号,病床数) %>% 
+        collect() %>% 
+        arrange(医療機関コード) 
+    }else{
+      tbl(con,'sisetu_main') %>% 
+        filter(update_date == input$target_update_date) %>% 
+        inner_join(tbl(con,'sisetu_sub'),by=c('update_date','医療機関コード')) %>% 
+        inner_join(tbl(con,'mst_pref'),by=c('厚生局コード','都道府県コード')) %>% 
+        select(医療機関コード,医療機関名称,都道府県名,住所,電話番号,病床数) %>% 
+        collect() %>% 
+        arrange(医療機関コード) 
+    }
+  })
+  
+  # # データダウンロードでダウンロードする届出一覧を作成
+  rt_download_todokede <- reactive({
+    if(input$target_update_date=='最新'){
+      tbl(con,'latest_todokede') %>% 
+        inner_join(tbl(con,'mst_todokede'),by='受理届出コード') %>% 
+        inner_join(select(tbl(con,'latest_sisetu_sub'),医療機関コード,医療機関名称),by='医療機関コード') %>% 
+        select(医療機関コード,医療機関名称,受理届出名称,算定開始年月日=西暦算定開始年月日) %>% 
+        collect() %>% 
+        arrange(医療機関コード,受理届出名称)
+    }else{
+      tbl(con,'todokede') %>% 
+        filter(update_date== input$target_update_date) %>% 
+        inner_join(tbl(con,'mst_todokede'),by='受理届出コード') %>% 
+        inner_join(select(tbl(con,'sisetu_sub'),医療機関コード,医療機関名称),by='医療機関コード') %>% 
+        select(医療機関コード,医療機関名称,受理届出名称,算定開始年月日=西暦算定開始年月日) %>% 
+        collect() %>% 
+        arrange(医療機関コード,受理届出名称)
+    }
+  })
+  
+  
+  # データダウンロードでダウンロードするデータ時点一覧を作成
+  rt_download_update_date <- reactive({
+    
+    # 厚生局ごとのupdate_dateを取得
+    if(input$target_update_date=='最新'){
+      kouseikyoku_update_date <- tbl(con,'mst_update_date') %>% 
+        group_by(厚生局) %>% 
+        summarise(update_date = max(update_date,na.rm=T)) %>% 
+        collect()
+    }else{
+      kouseikyoku_update_date <- tbl(con,'mst_update_date') %>% 
+        filter(update_date == input$target_update_date) %>% 
+        collect()
+    }
+    # 都道府県マスタと結合して、データ時点一覧を作成
+    df_mst_pref %>% 
+      left_join(kouseikyoku_update_date,by='厚生局') %>% 
+      replace_na(list(update_date='DB未格納')) %>% 
+      arrange(厚生局コード,都道府県コード) %>% 
+      select(厚生局,都道府県名,データ時点=update_date)
+    
+  })
+  
+  # データダウンロードでダウンロードするファイル名を作成
+  rt_download_filename <- reactive({
+    if(input$target_update_date=='最新'){
+      str_glue('施設基準届出_最新.xlsx')
+    }else{
+      str_glue('施設基準届出_{input$target_update_date}時点.xlsx')
+    }
+  })
+  
+  # データダウンロードのダウンロード機能
+  output$download_original_data <- downloadHandler(
+    filename = function(){
+      rt_download_filename()
+    },
+    content = function(file) {
+      list(
+        "医療機関一覧" = rt_download_sisetu(),
+        "施設基準届出一覧" = rt_download_todokede(),
+        "データ時点" = rt_download_update_date()
+      ) %>%
+        writexl::write_xlsx(file)
+    }
   )
 }
