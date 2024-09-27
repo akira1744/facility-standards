@@ -86,7 +86,6 @@ ui <-
             label='比較対象施設名',
             choices=NULL,
           ),
-          # hr(style = "border: 1px solid gray;"),
           ######################################################################
           h4('比較対象を施設基準で絞込'),
           textInput(
@@ -98,7 +97,15 @@ ui <-
             label='施設基準絞込の検索条件',
             choices=c('前方一致','部分一致','完全一致'),
             selected = '前方一致',
-          )
+          ),
+          ########################################################################
+          hr(style = "border: 1px solid gray;"),
+          selectInput(
+            inputId='display_todokede',
+            label='表示する施設基準',
+            choices=c('基本診療料','特掲診療料','すべて'),
+            selected = '基本診療料'
+          ),
         ),
         ########################################################################
         mainPanel(
@@ -139,6 +146,7 @@ ui <-
               br(),
               a("・九州厚生局", href = "https://kouseikyoku.mhlw.go.jp/kyushu/gyomu/gyomu/hoken_kikan/index_00007.html", target = "_blank"),
               br(),
+              p('・整理番号は、関東信越厚生局のものを使用しています。'),
               h3('問い合わせ先'),
               HTML("
                 <ul>

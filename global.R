@@ -29,7 +29,7 @@ sidelist_prefs <- c('すべて',df_mst_pref$都道府県名)
 
 # 届出マスタ
 df_mst_todokede <- tbl(con,'mst_todokede') %>%
-  select(受理届出コード,受理届出名称) %>%
+  select(受理届出コード,整理番号,受理届出名称) %>%
   collect() 
 
 sidelist_todokede <- df_mst_todokede %>% 

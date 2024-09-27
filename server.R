@@ -55,14 +55,27 @@ server <- function(input, output, session) {
       pull(医療機関コード)
 
     if (length(my_codes) == 1) {
-      df_latest_todokede %>%
+      my_todokede <- df_latest_todokede %>%
         filter(医療機関コード %in% my_codes) %>%
         select(受理届出コード) %>%
         inner_join(df_mst_todokede, by = "受理届出コード") %>%
-        select(受理届出名称)
+        select(整理番号,受理届出名称) %>% 
+        arrange(整理番号)
     } else {
-      tibble("受理届出名称" = "")
+      my_todokede <- tibble("整理番号"='',"受理届出名称" = "")
     }
+    
+    # 表示する施設基準で絞り込み
+    if (input$display_todokede=='基本診療料'){
+      my_todokede %>% 
+        filter(str_detect(整理番号,'^1'))
+    }else if (input$display_todokede=='特掲診療料'){
+      my_todokede %>% 
+        filter(str_detect(整理番号,'^2'))
+    }else{
+      my_todokede
+    }
+    
   })
 
   # 自院施設基準のtb作成
@@ -132,26 +145,37 @@ server <- function(input, output, session) {
     } else {
       
       if(input$todokede_kensaku=='前方一致'){
-        target_todokede_codes <- df_mst_todokede %>%
+        target_todokede_code <- df_mst_todokede %>%
           filter(str_detect(受理届出名称,str_glue('^{input$target_todokede}'))) %>% 
-          pull(受理届出コード)
+          select(受理届出コード,整理番号)
         
       }else if(input$todokede_kensaku=='完全一致'){
-        target_todokede_codes <- df_mst_todokede %>%
+        target_todokede_code <- df_mst_todokede %>%
           filter(受理届出名称==input$target_todokede) %>% 
-          pull(受理届出コード)
+          select(受理届出コード,整理番号)
         
       }else{
-        target_todokede_codes <- df_mst_todokede %>%
+        target_todokede_code <- df_mst_todokede %>%
           filter(str_detect(受理届出名称,input$target_todokede)) %>% 
-          pull(受理届出コード)
-        
+          select(受理届出コード,整理番号)
       }
       
-      if(length(target_todokede_codes)==0){
+      # 表示する施設基準で絞り込み
+      if (input$display_todokede=='基本診療料'){
+        target_todokede_code <- target_todokede_code %>% 
+          filter(str_detect(整理番号,'^1'))
+      }else if (input$display_todokede=='特掲診療料'){
+        target_todokede_code <- target_todokede_code %>% 
+          filter(str_detect(整理番号,'^2'))
+      }else{
+        target_todokede_code
+      }
+      
+      if(nrow(target_todokede_code)==0){
         c()
       }else{
-        target_todokede_codes
+        target_todokede_code %>% 
+          pull(受理届出コード)
       }
     }
   })
@@ -168,8 +192,8 @@ server <- function(input, output, session) {
         group_by(受理届出コード) %>% 
         summarise(算定施設数 = n()) %>% 
         left_join(df_mst_todokede,by='受理届出コード') %>% 
-        select(受理届出名称,算定施設数) %>% 
-        arrange(desc(算定施設数))
+        select(整理番号,受理届出名称,算定施設数) %>% 
+        arrange(desc(算定施設数),整理番号)
     }
   })
 
@@ -222,9 +246,9 @@ server <- function(input, output, session) {
   rt_target_todokede_all <- reactive({
     target_sisetu_count <- nrow(rt_target_sisetu3())
     if (target_sisetu_count == 0) {
-      tibble("受理届出コード" = 0)
+      target_todokede <- tibble("整理番号"='',"受理届出名称" = '')
     } else {
-      df_latest_todokede %>%
+      target_todokede <- df_latest_todokede %>%
         filter(医療機関コード %in% rt_target_sisetu3()$医療機関コード) %>%
         select(医療機関コード, 受理届出コード) %>%
         group_by(受理届出コード) %>%
@@ -233,8 +257,18 @@ server <- function(input, output, session) {
           算定施設数 = n()
         ) %>%
         inner_join(df_mst_todokede, by = "受理届出コード") %>%
-        select(受理届出名称,算定率,算定施設数) %>% 
+        select(整理番号,受理届出名称,算定率,算定施設数) %>% 
         arrange(desc(算定施設数))
+    }
+    
+    if (input$display_todokede=='基本診療料'){
+      target_todokede %>% 
+        filter(str_detect(整理番号,'^1'))
+    }else if (input$display_todokede=='特掲診療料'){
+      target_todokede %>% 
+        filter(str_detect(整理番号,'^2'))
+    }else{
+      target_todokede
     }
   })
   
@@ -244,12 +278,12 @@ server <- function(input, output, session) {
   rt_compare_todokede <- reactive({
     rt_my_todokede() %>%
       mutate(自院算定 = "〇") %>%
-      full_join(rt_target_todokede_all(), by = "受理届出名称") %>%
+      full_join(rt_target_todokede_all(), by = c("整理番号","受理届出名称")) %>%
       replace_na(list(
         自院算定 = "×", 算定施設数 = 0, 算定率 = 0
       )) %>%
       filter(受理届出名称 != "") %>%
-      arrange(desc(算定率), 受理届出名称) %>%
+      arrange(desc(算定率), 整理番号,受理届出名称) %>%
       filter(受理届出名称 != "なし")
   })
   
