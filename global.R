@@ -1,4 +1,4 @@
-pacman::p_load(DT,DBI,duckdb,duckplyr,tidyverse,shiny)
+pacman::p_load(DT,DBI,duckdb,duckplyr,arrow,tidyverse,shiny)
 
 source('myfunc.R')
 
@@ -9,6 +9,7 @@ con <- DBI::dbConnect(duckdb::duckdb(),'sisetukijun.duckdb',read_only=TRUE)
 # sidebarの準備
 
 ################################################################################
+
 
 # 厚生局のdf
 df_mst_kouseikyoku <- tbl(con,'mst_kouseikyoku') %>% 
@@ -43,6 +44,19 @@ df_latest_sisetu <- tbl(con,'latest_sisetu_main') %>%
   inner_join(tbl(con,'mst_pref'),by='都道府県コード') %>% 
   select(医療機関コード,施設名,都道府県名,住所) %>% 
   collect()
+
+# 許可病床数を取得
+bed <- read_parquet('s01_許可病床数.parquet',col_select=c('code','一般病床','療養病床')) 
+
+# 病床数を結合
+df_latest_sisetu <- df_latest_sisetu %>% 
+  left_join(bed,by=c('医療機関コード'='code')) %>% 
+  replace_na(list(一般病床=0,療養病床=0)) 
+
+df_latest_sisetu
+
+max_normalbed <- max(df_latest_sisetu$一般病床)
+max_ryoyobed <- max(df_latest_sisetu$療養病床)
 
 # sidebarの施設名一覧
 sidelist_sisetu <- df_latest_sisetu %>% 
@@ -89,7 +103,7 @@ update_date_wide <- tbl(con,'mst_update_date') %>%
 ################################################################################
 
 # table一覧
-DBI::dbListTables(con)
+# DBI::dbListTables(con)
 
 ################################################################################
 
@@ -118,3 +132,4 @@ DBI::dbListTables(con)
 #   replace_na(list(update_date='DB未格納')) %>% 
 #   arrange(厚生局コード,都道府県コード) %>% 
 #   select(厚生局,都道府県名,データ時点=update_date)
+

@@ -98,6 +98,24 @@ ui <-
             choices=c('前方一致','部分一致','完全一致'),
             selected = '前方一致',
           ),
+          ######################################################################
+          h4('病床数で絞り込み'),
+          sliderInput(
+            inputId='normalbed_range',
+            label='一般病床',
+            min=0,
+            max=max_normalbed,
+            value=c(0,max_normalbed),
+            step=10,
+          ),
+          sliderInput(
+            inputId='ryoyobed_range',
+            label='療養病床',
+            min=0,
+            max=max_ryoyobed,
+            value=c(0,max_ryoyobed),
+            step=10,
+          ),
           ########################################################################
           hr(style = "border: 1px solid gray;"),
           selectInput(
@@ -147,6 +165,7 @@ ui <-
               a("・九州厚生局", href = "https://kouseikyoku.mhlw.go.jp/kyushu/gyomu/gyomu/hoken_kikan/index_00007.html", target = "_blank"),
               br(),
               p('・整理番号は、関東信越厚生局のものを使用しています。'),
+              p('・一般病床・療養病床は病床機能報告の許可病床数を使用しています。'),
               h3('問い合わせ先'),
               HTML("
                 <ul>

@@ -9,7 +9,6 @@ server <- function(input, output, session) {
   updateSelectizeInput(session, "target_todokede2", choices=sidelist_todokede, server=TRUE)
   updateSelectizeInput(session, "target_todokede3", choices=sidelist_todokede, server=TRUE)
 
-
   ##############################################################################
   # マニュアルページ
   ##############################################################################
@@ -215,16 +214,34 @@ server <- function(input, output, session) {
         filter(医療機関コード %in% target_todokede_sisetu_codes)
     }
   })
+  ##############################################################################
+  
+  # 病床数で絞り込み
+  rt_target_sisetu4 <- reactive({
+    rt_target_sisetu3() %>% 
+      filter(between(
+        一般病床
+        ,as.numeric(input$normalbed_range[1])
+        ,as.numeric(input$normalbed_range[2])
+      )) %>%
+      filter(between(
+        療養病床
+        ,as.numeric(input$ryoyobed_range[1])
+        ,as.numeric(input$ryoyobed_range[2])
+      )) 
+  })
+  
+  ##############################################################################
   
   output$tb_target_sisetu <- renderDT(
-    mydatatable(rt_target_sisetu3(), row = 5)
+    mydatatable(rt_target_sisetu4(), row = 5)
   )
   
   ##############################################################################
 
   # 比較対象が0施設の場合のメッセージ
   target_sisetu_message <- reactive({
-    target_sisetu_count <- nrow(rt_target_sisetu3())
+    target_sisetu_count <- nrow(rt_target_sisetu4())
     if (target_sisetu_count == 0) {
       HTML('<span style="color: red;">比較対象が0施設です</span>')
     } else {
@@ -244,12 +261,12 @@ server <- function(input, output, session) {
 
   # 比較対象の施設基準を抽出
   rt_target_todokede_all <- reactive({
-    target_sisetu_count <- nrow(rt_target_sisetu3())
+    target_sisetu_count <- nrow(rt_target_sisetu4())
     if (target_sisetu_count == 0) {
       target_todokede <- tibble("整理番号"='',"受理届出名称" = '')
     } else {
       target_todokede <- df_latest_todokede %>%
-        filter(医療機関コード %in% rt_target_sisetu3()$医療機関コード) %>%
+        filter(医療機関コード %in% rt_target_sisetu4()$医療機関コード) %>%
         select(医療機関コード, 受理届出コード) %>%
         group_by(受理届出コード) %>%
         summarise(
@@ -324,7 +341,7 @@ server <- function(input, output, session) {
         "施設基準比較" = rt_compare_todokede(),
         "絞込条件" = rt_sidebar(),
         "自院" = rt_my_sisetu(),
-        "比較対象" = rt_target_sisetu3(),
+        "比較対象" = rt_target_sisetu4(),
         "使用データ" = mst_pref_update_date
       ) %>%
         writexl::write_xlsx(file)
