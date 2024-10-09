@@ -179,28 +179,6 @@ server <- function(input, output, session) {
     }
   })
   
-  # 施設基準で絞り込みの算定施設数集計dfを作成
-  rt_target_todokede_agg <- reactive({
-    if(input$target_todokede == ""){
-      tibble(受理届出名称='絞込用の施設基準が入力されていません。')
-    }else if (length(rt_target_todokede_codes())==0){
-      tibble(受理届出名称='該当する施設基準がありません。')
-    }else{
-      df_latest_todokede %>% 
-        filter(受理届出コード %in% rt_target_todokede_codes()) %>% 
-        group_by(受理届出コード) %>% 
-        summarise(算定施設数 = n()) %>% 
-        left_join(df_mst_todokede,by='受理届出コード') %>% 
-        select(整理番号,受理届出名称,算定施設数) %>% 
-        arrange(desc(算定施設数),整理番号)
-    }
-  })
-
-  # 比較対象のtb作成
-  output$tb_target_todokede_agg <- renderDT(
-    mydatatable(rt_target_todokede_agg(), row = 10)
-  )
-  
   ##############################################################################
   # 施設基準で絞込(1)
   rt_target_sisetu3 <- reactive({
@@ -226,6 +204,31 @@ server <- function(input, output, session) {
   
   output$tb_target_sisetu <- renderDT(
     mydatatable(rt_target_sisetu4(), row = 5)
+  )
+  
+  ##############################################################################
+  
+  # 施設基準で絞り込みの算定施設数集計dfを作成
+  rt_target_todokede_agg <- reactive({
+    if(input$target_todokede == ""){
+      tibble(受理届出名称='絞込用の施設基準が入力されていません。')
+    }else if (length(rt_target_todokede_codes())==0){
+      tibble(受理届出名称='該当する施設基準がありません。')
+    }else{
+      df_latest_todokede %>% 
+        filter(医療機関コード %in% unique(rt_target_sisetu4()$医療機関コード)) %>% 
+        filter(受理届出コード %in% rt_target_todokede_codes()) %>% 
+        group_by(受理届出コード) %>% 
+        summarise(算定施設数 = n()) %>% 
+        left_join(df_mst_todokede,by='受理届出コード') %>% 
+        select(整理番号,受理届出名称,算定施設数) %>% 
+        arrange(desc(算定施設数),整理番号)
+    }
+  })
+  
+  # 比較対象のtb作成
+  output$tb_target_todokede_agg <- renderDT(
+    mydatatable(rt_target_todokede_agg(), row = 10)
   )
   
   ##############################################################################
@@ -358,9 +361,7 @@ server <- function(input, output, session) {
         inner_join(tbl(con,'latest_sisetu_sub'),by=c('update_date','医療機関コード')) %>% 
         inner_join(tbl(con,'sisetu_bed',by=c('update_date','医療機関コード'))) %>% 
         inner_join(tbl(con,'mst_pref'),by=c('厚生局コード','都道府県コード')) %>% 
-        rename(病床=病床数) %>% 
-        rename(病床数=bed) %>% 
-        select(医療機関コード,医療機関名称,都道府県名,住所,電話番号,病床,病床数) %>% 
+        select(医療機関コード,医療機関名称,都道府県名,住所,電話番号,病床数,総病床数=bed) %>% 
         collect() %>% 
         arrange(医療機関コード) 
     }else{
@@ -369,9 +370,7 @@ server <- function(input, output, session) {
         inner_join(tbl(con,'sisetu_sub'),by=c('update_date','医療機関コード')) %>% 
         inner_join(tbl(con,'sisetu_bed',by=c('update_date','医療機関コード'))) %>% 
         inner_join(tbl(con,'mst_pref'),by=c('厚生局コード','都道府県コード')) %>% 
-        rename(病床=病床数) %>% 
-        rename(病床数=bed) %>% 
-        select(医療機関コード,医療機関名称,都道府県名,住所,電話番号,病床,病床数) %>% 
+        select(医療機関コード,医療機関名称,都道府県名,住所,電話番号,病床数,総病床数=bed) %>% 
         collect() %>% 
         arrange(医療機関コード) 
     }
