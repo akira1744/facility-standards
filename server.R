@@ -15,11 +15,11 @@ server <- function(input, output, session) {
   # 自院のdf作成
   rt_my_sisetu <- reactive({
     if (input$my_sisetu == "") {
-      tibble("医療機関コード" = "-", "施設名" = "", "都道府県名" = "", "住所" = "")
+      tibble("医療機関コード" = "-", "施設名" = "", "都道府県名" = "", "住所" = "",'病床数'='','総病床数'='')
     } else {
       df_latest_sisetu %>%
         filter(施設名==input$my_sisetu) %>%
-        select(医療機関コード, 施設名, 都道府県名, 住所)
+        select(医療機関コード, 施設名, 都道府県名, 住所,病床数,総病床数)
     }
   })
 
@@ -219,16 +219,7 @@ server <- function(input, output, session) {
   # 病床数で絞り込み
   rt_target_sisetu4 <- reactive({
     rt_target_sisetu3() %>% 
-      filter(between(
-        一般病床
-        ,as.numeric(input$normalbed_range[1])
-        ,as.numeric(input$normalbed_range[2])
-      )) %>%
-      filter(between(
-        療養病床
-        ,as.numeric(input$ryoyobed_range[1])
-        ,as.numeric(input$ryoyobed_range[2])
-      )) 
+      filter(between(総病床数,input$bed_range[1],input$bed_range[2]))
   })
   
   ##############################################################################
@@ -365,16 +356,22 @@ server <- function(input, output, session) {
     if(input$target_update_date=='最新'){
       tbl(con,'latest_sisetu_main') %>% 
         inner_join(tbl(con,'latest_sisetu_sub'),by=c('update_date','医療機関コード')) %>% 
+        inner_join(tbl(con,'sisetu_bed',by=c('update_date','医療機関コード'))) %>% 
         inner_join(tbl(con,'mst_pref'),by=c('厚生局コード','都道府県コード')) %>% 
-        select(医療機関コード,医療機関名称,都道府県名,住所,電話番号,病床数) %>% 
+        rename(病床=病床数) %>% 
+        rename(病床数=bed) %>% 
+        select(医療機関コード,医療機関名称,都道府県名,住所,電話番号,病床,病床数) %>% 
         collect() %>% 
         arrange(医療機関コード) 
     }else{
       tbl(con,'sisetu_main') %>% 
         filter(update_date == input$target_update_date) %>% 
         inner_join(tbl(con,'sisetu_sub'),by=c('update_date','医療機関コード')) %>% 
+        inner_join(tbl(con,'sisetu_bed',by=c('update_date','医療機関コード'))) %>% 
         inner_join(tbl(con,'mst_pref'),by=c('厚生局コード','都道府県コード')) %>% 
-        select(医療機関コード,医療機関名称,都道府県名,住所,電話番号,病床数) %>% 
+        rename(病床=病床数) %>% 
+        rename(病床数=bed) %>% 
+        select(医療機関コード,医療機関名称,都道府県名,住所,電話番号,病床,病床数) %>% 
         collect() %>% 
         arrange(医療機関コード) 
     }

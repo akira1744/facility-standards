@@ -86,6 +86,7 @@ ui <-
             label='比較対象施設名',
             choices=NULL,
           ),
+
           ######################################################################
           h4('比較対象を施設基準で絞込'),
           textInput(
@@ -99,21 +100,12 @@ ui <-
             selected = '前方一致',
           ),
           ######################################################################
-          h4('病床数で絞り込み'),
           sliderInput(
-            inputId='normalbed_range',
-            label='一般病床',
+            inputId='bed_range',
+            label='総病床数',
             min=0,
-            max=max_normalbed,
-            value=c(0,max_normalbed),
-            step=10,
-          ),
-          sliderInput(
-            inputId='ryoyobed_range',
-            label='療養病床',
-            min=0,
-            max=max_ryoyobed,
-            value=c(0,max_ryoyobed),
+            max=max_bed,
+            value=c(0,max_bed),
             step=10,
           ),
           ########################################################################

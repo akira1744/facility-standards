@@ -10,7 +10,6 @@ con <- DBI::dbConnect(duckdb::duckdb(),'sisetukijun.duckdb',read_only=TRUE)
 
 ################################################################################
 
-
 # 厚生局のdf
 df_mst_kouseikyoku <- tbl(con,'mst_kouseikyoku') %>% 
   collect() %>% 
@@ -41,22 +40,12 @@ sidelist_todokede <- df_mst_todokede %>%
 # server処理用にsisetuのdfを準備
 df_latest_sisetu <- tbl(con,'latest_sisetu_main') %>% 
   inner_join(tbl(con,'latest_sisetu_sub'),by=c('update_date','医療機関コード')) %>% 
+  inner_join(tbl(con,'sisetu_bed',by=c('update_date','医療機関コード'))) %>% 
   inner_join(tbl(con,'mst_pref'),by='都道府県コード') %>% 
-  select(医療機関コード,施設名,都道府県名,住所) %>% 
+  select(医療機関コード,施設名,都道府県名,住所,病床数,総病床数=bed) %>% 
   collect()
 
-# 許可病床数を取得
-bed <- read_parquet('s01_許可病床数.parquet',col_select=c('code','一般病床','療養病床')) 
-
-# 病床数を結合
-df_latest_sisetu <- df_latest_sisetu %>% 
-  left_join(bed,by=c('医療機関コード'='code')) %>% 
-  replace_na(list(一般病床=0,療養病床=0)) 
-
-df_latest_sisetu
-
-max_normalbed <- max(df_latest_sisetu$一般病床)
-max_ryoyobed <- max(df_latest_sisetu$療養病床)
+max_bed <- max(df_latest_sisetu$総病床数)
 
 # sidebarの施設名一覧
 sidelist_sisetu <- df_latest_sisetu %>% 
