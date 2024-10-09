@@ -356,7 +356,7 @@ server <- function(input, output, session) {
   
   # データダウンロードでダウンロードする医療機関一覧を作成
   rt_download_sisetu <- reactive({
-    if(input$target_update_date=='最新'){
+    if(input$target_update_date=='各厚生局の最新時点'){
       tbl(con,'latest_sisetu_main') %>% 
         inner_join(tbl(con,'latest_sisetu_sub'),by=c('update_date','医療機関コード')) %>% 
         inner_join(tbl(con,'sisetu_bed',by=c('update_date','医療機関コード'))) %>% 
@@ -378,7 +378,7 @@ server <- function(input, output, session) {
   
   # # データダウンロードでダウンロードする届出一覧を作成
   rt_download_todokede <- reactive({
-    if(input$target_update_date=='最新'){
+    if(input$target_update_date=='各厚生局の最新時点'){
       tbl(con,'latest_todokede') %>% 
         inner_join(tbl(con,'mst_todokede'),by='受理届出コード') %>% 
         inner_join(select(tbl(con,'latest_sisetu_sub'),医療機関コード,医療機関名称),by='医療機関コード') %>% 
@@ -401,7 +401,7 @@ server <- function(input, output, session) {
   rt_download_update_date <- reactive({
     
     # 厚生局ごとのupdate_dateを取得
-    if(input$target_update_date=='最新'){
+    if(input$target_update_date=='各厚生局の最新時点'){
       kouseikyoku_update_date <- tbl(con,'mst_update_date') %>% 
         group_by(厚生局) %>% 
         summarise(update_date = max(update_date,na.rm=T)) %>% 
@@ -422,8 +422,8 @@ server <- function(input, output, session) {
   
   # データダウンロードでダウンロードするファイル名を作成
   rt_download_filename <- reactive({
-    if(input$target_update_date=='最新'){
-      str_glue('施設基準届出_最新.xlsx')
+    if(input$target_update_date=='各厚生局の最新時点'){
+      str_glue('施設基準届出_各厚生局の最新時点.xlsx')
     }else{
       str_glue('施設基準届出_{input$target_update_date}時点.xlsx')
     }

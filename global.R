@@ -71,7 +71,7 @@ update_dates <- tbl(con,'mst_update_date') %>%
   pull(update_date)
 
 # ダウンロード対象を選択するための選択肢
-choices_update_dates <- c('最新',update_dates)
+choices_update_dates <- c('各厚生局の最新時点',update_dates)
 
 # 厚生局ごとにいつのデータが入っているのかを示すdf
 update_date_wide <- tbl(con,'mst_update_date') %>% 
