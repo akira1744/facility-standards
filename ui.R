@@ -102,7 +102,7 @@ ui <-
           hr(style = "border: 1px solid gray;"),
           selectInput(
             inputId='display_todokede',
-            label='表示する施設基準',
+            label='表示対象の施設基準',
             choices=c('基本診療料','特掲診療料','すべて'),
             selected = '基本診療料'
           ),
@@ -226,8 +226,6 @@ ui <-
           h3('ダウンロード可能データ'),
           DTOutput('tb_update_date_wide')
         ),
-        # TODO ダウンロードデータの作成をserverに
-        # TODO ダウンロードボタンの設定をuiに
       ),
     )
     # ##########################################################################
