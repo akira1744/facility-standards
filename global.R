@@ -120,8 +120,7 @@ mst_pref_update_date <- tbl(con,'mst_update_date') %>%
   inner_join(tbl(con,'mst_pref'),by='厚生局コード') %>%
   arrange(厚生局コード,都道府県コード) %>% 
   select(厚生局,都道府県名,時点=update_date) %>% 
-  collect() %>% 
-  print()
+  collect() 
 
 ################################################################################
 
