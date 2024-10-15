@@ -8,7 +8,83 @@ server <- function(input, output, session) {
   updateSelectizeInput(session, "target_todokede1", choices=sidelist_todokede, server=TRUE)
   updateSelectizeInput(session, "target_todokede2", choices=sidelist_todokede, server=TRUE)
   updateSelectizeInput(session, "target_todokede3", choices=sidelist_todokede, server=TRUE)
-
+  
+  ##############################################################################
+  # 施設基準検索のページ
+  ##############################################################################
+  
+  # input$kensaku_wordとinput$kensaku_methodから受理届出コードを抽出
+  rt_kensaku_todokede <- reactive({
+    
+    if(input$kensaku_word==''){
+      tibble("受理届出コード" = "-","整理番号"='-', "受理届出名称" = "-")
+    }else if(input$kensaku_method=='前方一致'){
+      df_mst_todokede %>% 
+        filter(str_detect(受理届出名称,str_glue('^{input$kensaku_word}'))) 
+    }else if(input$kensaku_method=='部分一致'){
+      df_mst_todokede %>% 
+        filter(str_detect(受理届出名称,input$kensaku_word))
+    }else{
+      df_mst_todokede %>% 
+        filter(受理届出名称 == input$kensaku_word) 
+    }
+  })
+  
+  # 届出医療機関一覧のdfを作成
+  rt_kensaku_sisetu <- reactive({
+    if(input$kensaku_word=='' | nrow(df_latest_todokede)==0){
+      tibble("整理番号" = "-", "受理届出名称" = "-", "医療機関コード" = "-", "施設名" = "-", "都道府県名" = "-", "住所" = "-", "病床" = "-", "総病床数" = "-")
+    }else{
+      rt_kensaku_todokede() %>% 
+        inner_join(df_latest_todokede,by='受理届出コード') %>% 
+        inner_join(df_latest_sisetu,by='医療機関コード') %>% 
+        select(整理番号,受理届出名称,医療機関コード,施設名,都道府県名,住所,病床数,総病床数) %>% 
+        arrange(整理番号,医療機関コード)
+    }
+  })
+  
+  # 届出医療機関一覧のDTを作成
+  output$tb_kensaku_sisetu <- renderDT(
+    mydatatable(rt_kensaku_sisetu(), row = 10)
+  )
+  
+  # 届出集計表を作成
+  rt_kensaku_agg <- reactive({
+    if(input$kensaku_word=='' | nrow(rt_kensaku_todokede())==0){
+      tibble("整理番号" = "-", "受理届出名称" = "-", "施設数" = "-")
+    }else{
+      
+      rt_kensaku_sisetu() %>% 
+        group_by(整理番号,受理届出名称) %>% 
+        summarise(施設数 = n(),.groups='drop') %>%
+        arrange(整理番号)
+    }
+  })
+  
+  # 届出集計表のDTを作成
+  output$tb_kensaku_agg <- renderDT(
+    mydatatable(rt_kensaku_agg(), row = 10)
+  )
+  
+  rt_kensaku_filename <- reactive({
+    str_glue("施設基準検索_{input$kensaku_word}({input$kensaku_method}).xlsx")
+  })
+  
+  # 施設基準検索のダウンロード機能
+  output$download_kensaku_todokede <- downloadHandler(
+    filename = function(){
+      rt_kensaku_filename()
+    },
+    content = function(file) {
+      list(
+        "集計表"=rt_kensaku_agg(),
+        "施設一覧"=rt_kensaku_sisetu(),
+        "使用データ" = mst_pref_update_date
+      ) %>%
+        writexl::write_xlsx(file)
+    }
+  )
+  
   ##############################################################################
   # マニュアルページ
   ##############################################################################
@@ -359,7 +435,7 @@ server <- function(input, output, session) {
     if(input$target_update_date=='各厚生局の最新時点'){
       tbl(con,'latest_sisetu_main') %>% 
         inner_join(tbl(con,'latest_sisetu_sub'),by=c('update_date','医療機関コード')) %>% 
-        inner_join(tbl(con,'sisetu_bed',by=c('update_date','医療機関コード'))) %>% 
+        inner_join(tbl(con,'sisetu_bed'),by=c('update_date','医療機関コード')) %>% 
         inner_join(tbl(con,'mst_pref'),by=c('厚生局コード','都道府県コード')) %>% 
         select(医療機関コード,医療機関名称,都道府県名,住所,電話番号,病床数,総病床数=bed) %>% 
         collect() %>% 
@@ -368,7 +444,7 @@ server <- function(input, output, session) {
       tbl(con,'sisetu_main') %>% 
         filter(update_date == input$target_update_date) %>% 
         inner_join(tbl(con,'sisetu_sub'),by=c('update_date','医療機関コード')) %>% 
-        inner_join(tbl(con,'sisetu_bed',by=c('update_date','医療機関コード'))) %>% 
+        inner_join(tbl(con,'sisetu_bed'),by=c('update_date','医療機関コード')) %>% 
         inner_join(tbl(con,'mst_pref'),by=c('厚生局コード','都道府県コード')) %>% 
         select(医療機関コード,医療機関名称,都道府県名,住所,電話番号,病床数,総病床数=bed) %>% 
         collect() %>% 

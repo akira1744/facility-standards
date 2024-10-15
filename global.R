@@ -25,12 +25,16 @@ df_mst_pref <- tbl(con,'mst_pref') %>%
   select(厚生局コード,厚生局,都道府県コード,都道府県名) %>% 
   collect()
 
+# df_mst_pref
+
 sidelist_prefs <- c('すべて',df_mst_pref$都道府県名)
 
 # 届出マスタ
 df_mst_todokede <- tbl(con,'mst_todokede') %>%
   select(受理届出コード,整理番号,受理届出名称) %>%
   collect() 
+
+# df_mst_todokede
 
 sidelist_todokede <- df_mst_todokede %>% 
   filter(受理届出名称!='なし') %>% 
@@ -40,10 +44,22 @@ sidelist_todokede <- df_mst_todokede %>%
 # server処理用にsisetuのdfを準備
 df_latest_sisetu <- tbl(con,'latest_sisetu_main') %>% 
   inner_join(tbl(con,'latest_sisetu_sub'),by=c('update_date','医療機関コード')) %>% 
-  inner_join(tbl(con,'sisetu_bed',by=c('update_date','医療機関コード'))) %>% 
+  inner_join(tbl(con,'sisetu_bed'),by=c('update_date','医療機関コード')) %>% 
   inner_join(tbl(con,'mst_pref'),by='都道府県コード') %>% 
   select(医療機関コード,施設名,都道府県名,住所,病床数,総病床数=bed) %>% 
+  arrange(医療機関コード) %>% 
   collect()
+
+# tbl(con,'latest_sisetu_main') %>% 
+#   filter(str_detect(施設名,'北海道大学'))
+# 
+# tbl(con,'latest_sisetu_sub') %>% 
+#   filter(str_detect(医療機関名称,'北海道大学'))
+# 
+# tbl(con,'sisetu_bed') %>% 
+#   filter(医療機関コード=='0118010016')
+
+# df_latest_sisetu
 
 max_bed <- max(df_latest_sisetu$総病床数)
 
@@ -56,6 +72,12 @@ sidelist_sisetu <- df_latest_sisetu %>%
 df_latest_todokede <- tbl(con,'latest_todokede') %>% 
   select(医療機関コード,受理届出コード) %>% 
   collect()
+
+################################################################################
+
+# df_mst_todokede
+# df_latest_todokede
+# df_latest_sisetu
 
 ################################################################################
 
@@ -88,6 +110,18 @@ update_date_wide <- tbl(con,'mst_update_date') %>%
   arrange(desc(update_date)) %>% 
   rename(時点=update_date)
 
+################################################################################
+
+# 最新データの時点を示すために、mst_pref_update_dateを作成
+mst_pref_update_date <- tbl(con,'mst_update_date') %>% 
+  group_by(厚生局) %>% 
+  summarise(update_date = max(update_date,na.rm=T)) %>%
+  inner_join(tbl(con,'mst_kouseikyoku'),by='厚生局') %>%
+  inner_join(tbl(con,'mst_pref'),by='厚生局コード') %>%
+  arrange(厚生局コード,都道府県コード) %>% 
+  select(厚生局,都道府県名,時点=update_date) %>% 
+  collect() %>% 
+  print()
 
 ################################################################################
 
