@@ -50,6 +50,8 @@ df_latest_sisetu <- tbl(con,'latest_sisetu_main') %>%
   arrange(医療機関コード) %>% 
   collect()
 
+# df_latest_sisetu
+
 # tbl(con,'latest_sisetu_main') %>% 
 #   filter(str_detect(施設名,'北海道大学'))
 # 

@@ -12,32 +12,87 @@ server <- function(input, output, session) {
   ##############################################################################
   # 施設基準検索のページ
   ##############################################################################
-  
+
   # input$kensaku_wordとinput$kensaku_methodから受理届出コードを抽出
   rt_kensaku_todokede <- reactive({
+    
+    kensaku_word_fullwidth <- stringi::stri_trans_general(input$kensaku_word,'Halfwidth-Fullwidth')
     
     if(input$kensaku_word==''){
       tibble("受理届出コード" = "-","整理番号"='-', "受理届出名称" = "-")
     }else if(input$kensaku_method=='前方一致'){
       df_mst_todokede %>% 
-        filter(str_detect(受理届出名称,str_glue('^{input$kensaku_word}'))) 
+        filter(
+          str_detect(受理届出名称,str_glue('^{input$kensaku_word}'))
+          | str_detect(受理届出名称,str_glue('^{kensaku_word_fullwidth}'))
+        ) 
     }else if(input$kensaku_method=='部分一致'){
       df_mst_todokede %>% 
-        filter(str_detect(受理届出名称,input$kensaku_word))
+        filter(
+          str_detect(受理届出名称,input$kensaku_word)
+          | str_detect(受理届出名称,kensaku_word_fullwidth)
+        )
     }else{
       df_mst_todokede %>% 
-        filter(受理届出名称 == input$kensaku_word) 
+        filter(
+          受理届出名称 == input$kensaku_word
+          | 受理届出名称 == kensaku_word_fullwidth
+        ) 
     }
   })
+  
+  ##############################################################################
+  
+  # 厚生局選択に応じて,df_mst_prefを絞り込み
+  rt_kensaku_pref <- reactive({
+    if (input$kensaku_kouseikyoku == "すべて") {
+      df_mst_pref
+    } else {
+      df_mst_pref %>%
+        filter(厚生局 == input$kensaku_kouseikyoku)
+    }
+  })
+  
+  # sidebar用に都道府県一覧を作成
+  rt_kensaku_sidelist_prefs <- reactive({
+    rt_kensaku_pref() %>%
+      pull(都道府県名) %>%
+      c("すべて", .)
+  })
+  
+  # rt_sidelist_prefsが更新されたとき、サイドバーの更新
+  observe({
+    updateSelectInput(session, "kensaku_pref", choices = rt_kensaku_sidelist_prefs())
+  })
+  
+  # 県で施設リストをしぼりこみ
+  rt_filter_sisetu <- reactive({
+    
+    tmp <- df_latest_sisetu %>%
+      filter(between(総病床数,input$kensaku_bed_range[1],input$kensaku_bed_range[2]))
+    
+    
+    if (input$kensaku_pref == "すべて") {
+      tmp %>% 
+        filter(都道府県名 %in% rt_kensaku_pref()$都道府県名)
+    } else {
+      tmp %>% 
+        filter(都道府県名 == input$kensaku_pref)
+    }
+  })
+  
+  ##############################################################################
+
   
   # 届出医療機関一覧のdfを作成
   rt_kensaku_sisetu <- reactive({
     if(input$kensaku_word=='' | nrow(df_latest_todokede)==0){
       tibble("整理番号" = "-", "受理届出名称" = "-", "医療機関コード" = "-", "施設名" = "-", "都道府県名" = "-", "住所" = "-", "病床" = "-", "総病床数" = "-")
     }else{
+      
       rt_kensaku_todokede() %>% 
         inner_join(df_latest_todokede,by='受理届出コード') %>% 
-        inner_join(df_latest_sisetu,by='医療機関コード') %>% 
+        inner_join(rt_filter_sisetu(),by='医療機関コード') %>% 
         select(整理番号,受理届出名称,医療機関コード,施設名,都道府県名,住所,病床数,総病床数) %>% 
         arrange(整理番号,医療機関コード)
     }
@@ -191,7 +246,7 @@ server <- function(input, output, session) {
         filter(都道府県名 %in% rt_mst_pref()$都道府県名)
     } else {
       df_latest_sisetu %>%
-        filter(都道府県名 %in% input$target_pref)
+        filter(都道府県名 == input$target_pref)
     }
   })
 
@@ -215,23 +270,35 @@ server <- function(input, output, session) {
   
   # 施設基準で絞込の受理届出コードを取得
   rt_target_todokede_codes <- reactive({
+    
     if (input$target_todokede == "") {
       c()
     } else {
       
+      target_todokede_fullwidth <- stringi::stri_trans_general(input$target_todokede,'Halfwidth-Fullwidth')
+      
       if(input$todokede_kensaku=='前方一致'){
         target_todokede_code <- df_mst_todokede %>%
-          filter(str_detect(受理届出名称,str_glue('^{input$target_todokede}'))) %>% 
+          filter(
+            str_detect(受理届出名称,str_glue('^{input$target_todokede}'))
+            | str_detect(受理届出名称,str_glue('^{target_todokede_fullwidth}'))
+          ) %>% 
           select(受理届出コード,整理番号)
         
       }else if(input$todokede_kensaku=='完全一致'){
         target_todokede_code <- df_mst_todokede %>%
-          filter(受理届出名称==input$target_todokede) %>% 
+          filter(
+            受理届出名称==input$target_todokede
+            | 受理届出名称==target_todokede_fullwidth
+          ) %>% 
           select(受理届出コード,整理番号)
         
       }else{
         target_todokede_code <- df_mst_todokede %>%
-          filter(str_detect(受理届出名称,input$target_todokede)) %>% 
+          filter(
+            str_detect(受理届出名称,input$target_todokede)
+            | str_detect(受理届出名称,target_todokede_fullwidth)
+          ) %>% 
           select(受理届出コード,整理番号)
       }
       

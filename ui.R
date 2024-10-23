@@ -71,6 +71,26 @@ ui <-
             choices=c('前方一致','部分一致','完全一致'),
             selected = '前方一致',
           ),
+          selectInput(
+            inputId='kensaku_kouseikyoku',
+            label='厚生局',
+            choices=sidelist_kouseikyokus,
+            selected='すべて'
+          ),
+          selectInput(
+            inputId='kensaku_pref',
+            label='都道府県',
+            choices=sidelist_prefs,
+            selected='すべて'
+          ),
+          sliderInput(
+            inputId='kensaku_bed_range',
+            label='総病床数',
+            min=0,
+            max=max_bed,
+            value=c(0,max_bed),
+            step=10,
+          ),
           downloadButton('download_kensaku_todokede', label = 'Download')
         ),
         mainPanel(
@@ -192,8 +212,8 @@ ui <-
           selectInput(
             inputId='display_todokede',
             label='表示対象の施設基準',
-            choices=c('基本診療料','特掲診療料','すべて'),
-            selected = '基本診療料'
+            choices=c('すべて','基本診療料','特掲診療料'),
+            selected = 'すべて'
           ),
           hr(style = "border: 1px solid gray;"),
           h4('データダウンロード'),
