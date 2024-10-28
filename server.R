@@ -532,7 +532,7 @@ server <- function(input, output, session) {
       tbl(con,'todokede') %>% 
         filter(update_date== input$target_update_date) %>% 
         inner_join(tbl(con,'mst_todokede'),by='受理届出コード') %>% 
-        inner_join(select(tbl(con,'sisetu_sub'),医療機関コード,医療機関名称),by='医療機関コード') %>% 
+        inner_join(select(tbl(con,'sisetu_sub'),update_date,医療機関コード,医療機関名称),by=c('update_date','医療機関コード')) %>% 
         select(医療機関コード,医療機関名称,受理届出名称,算定開始年月日=西暦算定開始年月日) %>% 
         collect() %>% 
         arrange(医療機関コード,受理届出名称)
