@@ -44,7 +44,7 @@ ui <-
           br(),
           a("・九州厚生局", href = "https://kouseikyoku.mhlw.go.jp/kyushu/gyomu/gyomu/hoken_kikan/index_00007.html", target = "_blank"),
           br(),
-          p('(整理番号は、関東信越厚生局のものを使用しています)'),
+          p('(整理番号は、関東信越厚生局のホームページから取得)'),
           h3('問い合わせ先'),
           HTML("
                 <ul>
