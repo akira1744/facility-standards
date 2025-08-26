@@ -126,7 +126,80 @@ mst_pref_update_date <- tbl(con,'mst_update_date') %>%
 
 ################################################################################
 
-# table一覧
+# compare_todokedeの処理ロジック変更のために検証
+
+################################################################################
+
+# 届出Groupをmemoryに載せる
+df_mst_todokede_group <- tbl(con,'mst_todokede_group') %>% 
+  select(整理番号,受理届出名称,分類,分類番号) %>% 
+  collect() %>% 
+  print()
+# 
+# df_latest_sisetu %>% 
+#   filter(str_detect(施設名,'埼玉石心会'))
+# 
+# my_codes <- '1112702298'
+# 
+# my_todokede <- df_latest_todokede %>%
+#   filter(医療機関コード %in% my_codes) %>%
+#   select(受理届出コード) %>%
+#   inner_join(df_mst_todokede, by = "受理届出コード") %>%
+#   select(整理番号,受理届出名称) %>% 
+#   arrange(整理番号) %>% 
+#   print()
+# 
+# target_sisetu_count <- nrow(df_latest_todokede)
+# 
+# target_todokede_all <- df_latest_todokede %>%
+#   select(医療機関コード, 受理届出コード) %>%
+#   group_by(受理届出コード) %>%
+#   summarise(
+#     算定率 = n() / target_sisetu_count,
+#     算定施設数 = n()
+#   ) %>%
+#   inner_join(df_mst_todokede, by = "受理届出コード") %>%
+#   select(整理番号,受理届出名称,算定率,算定施設数) %>% 
+#   arrange(desc(算定施設数)) %>% 
+#   print()
+
+# my_todokede %>%
+#   mutate(ziin=1) %>% 
+#   full_join(target_todokede_all, by = c("整理番号","受理届出名称")) %>%
+#   replace_na(list(
+#     ziin = 0, 算定施設数 = 0, 算定率 = 0
+#   )) %>%
+#   filter(受理届出名称 != "") %>%
+#   arrange(desc(算定率), 整理番号,受理届出名称) %>%
+#   filter(受理届出名称 != "なし") %>% 
+#   left_join(df_mst_todokede_group,by=c("整理番号","受理届出名称")) %>% 
+#   arrange(分類,分類番号) %>% 
+#   group_by(分類) %>% 
+#   mutate(ziin_cumsum = cumsum(ziin)) %>% 
+#   ungroup() %>% 
+#   filter(!(ziin_cumsum>0 & ziin==0)) %>% 
+#   mutate(自院算定 = if_else(ziin==1,'〇','×')) %>% 
+#   select(整理番号,受理届出名称,自院算定,算定率,算定施設数) %>% 
+#   print()
+  
+# 
+# # 自院と比較対象施設の集計表を結合
+# rt_compare_todokede <- reactive({
+#   rt_my_todokede() %>%
+#     mutate(自院算定 = "〇") %>%
+#     full_join(rt_target_todokede_all(), by = c("整理番号","受理届出名称")) %>%
+#     replace_na(list(
+#       自院算定 = "×", 算定施設数 = 0, 算定率 = 0
+#     )) %>%
+#     filter(受理届出名称 != "") %>%
+#     arrange(desc(算定率), 整理番号,受理届出名称) %>%
+#     filter(受理届出名称 != "なし")
+# })
+
+
+################################################################################
+
+# # table一覧
 # DBI::dbListTables(con)
 
 ################################################################################

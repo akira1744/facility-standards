@@ -428,15 +428,36 @@ server <- function(input, output, session) {
   
   ##############################################################################
 
+  # # 自院と比較対象施設の集計表を結合
+  # rt_compare_todokede <- reactive({
+  #   rt_my_todokede() %>%
+  #     mutate(自院算定 = "〇") %>%
+  #     full_join(rt_target_todokede_all(), by = c("整理番号","受理届出名称")) %>%
+  #     replace_na(list(
+  #       自院算定 = "×", 算定施設数 = 0, 算定率 = 0
+  #     )) %>%
+  #     filter(受理届出名称 != "") %>%
+  #     arrange(desc(算定率), 整理番号,受理届出名称) %>%
+  #     filter(受理届出名称 != "なし")
+  # })
+  
   # 自院と比較対象施設の集計表を結合
   rt_compare_todokede <- reactive({
     rt_my_todokede() %>%
-      mutate(自院算定 = "〇") %>%
+      mutate(ziin=1) %>%
       full_join(rt_target_todokede_all(), by = c("整理番号","受理届出名称")) %>%
-      replace_na(list(
-        自院算定 = "×", 算定施設数 = 0, 算定率 = 0
-      )) %>%
+      replace_na(list(ziin = 0, 算定施設数 = 0, 算定率 = 0)) %>%
       filter(受理届出名称 != "") %>%
+      arrange(desc(算定率), 整理番号,受理届出名称) %>%
+      filter(受理届出名称 != "なし") %>%
+      left_join(df_mst_todokede_group,by=c("整理番号","受理届出名称")) %>%
+      arrange(分類,分類番号) %>%
+      group_by(分類) %>%
+      mutate(ziin_cumsum = cumsum(ziin)) %>%
+      ungroup() %>%
+      filter(!(ziin_cumsum>0 & ziin==0)) %>%
+      mutate(自院算定 = if_else(ziin==1,'〇','×')) %>%
+      select(整理番号,受理届出名称,自院算定,算定率,算定施設数) %>% 
       arrange(desc(算定率), 整理番号,受理届出名称) %>%
       filter(受理届出名称 != "なし")
   })
